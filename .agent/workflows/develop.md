@@ -11,7 +11,8 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 
 > **このステップは省略不可。** エージェント起動時に必ず以下のメニューを提示する。
 
-1. `AGENTS.md` を読み込み、プロセス規約を理解する（特にSection 9〜20の規約）
+1. `AGENTS.md` を読み込み、コア規約と工程別ロードマップ（Section 3）を理解する
+   - 必ず `agents/branch-and-onboarding.md` と `agents/sub-agent-and-context.md` も読む
 2. 以下のメニューを人間に提示する:
 
 ```
@@ -30,7 +31,7 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 番号で選んでください（または自由にご要望をお伝えください）:
 ```
 
-3. 選択に応じて以下を実行する:
+1. 選択に応じて以下を実行する:
    - **1️⃣ 新規プロジェクト**: プロジェクト名を聞く → `git checkout -b feature/<project>/initial-requirements` → プロジェクトディレクトリ作成 → Step 1 へ
    - **2️⃣ 継続**: `docs/projects/` 配下を一覧 → プロジェクト選択 → `context/current-phase.md` で現在工程を確認 → 既存ブランチをチェックアウト → 該当 Step へ
    - **3️⃣ レビュー**: レビュー対象を聞く → `git checkout -b review/<project>/<description>` → 「レビュー依頼を受けた場合」セクションへ
@@ -39,13 +40,13 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
    - **6️⃣ 閲覧**: `docs/projects/` を一覧表示（ブランチ作成不要）
    - **7️⃣ フレームワーク更新**: 変更内容を聞く → `git checkout -b docs/<description>` → 直接編集
 
-> ⚠️ **重要**: main ブランチで直接プロジェクト作業をしてはならない。必ず作業用ブランチを作成すること（AGENTS.md Section 20）。
+> ⚠️ **重要**: main ブランチで直接プロジェクト作業をしてはならない。必ず作業用ブランチを作成すること（`agents/branch-and-onboarding.md` §20）。
 
 ## 事前準備（ブランチ作成後）
 
 1. `knowledge/` 配下の観点表・チェックリストを確認する
 2. プロジェクトのコンテキストファイル `docs/projects/<project>/context/` を確認・作成する
-3. **対話ログディレクトリ `docs/projects/<project>/logs/` を確認・作成する**（AGENTS.md Section 19）
+3. **対話ログディレクトリ `docs/projects/<project>/logs/` を確認・作成する**（`agents/sub-agent-and-context.md` §19）
 
 ## 変更履歴・コミットルール（全工程共通）
 
@@ -73,12 +74,13 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 3. ゴールに至るまでのリスクや制約条件を確認する
 4. 機能要求と非機能要求に分類する
 5. 各要求に対して「理由」を確認する
-6. **Mermaidでユースケース図を作成する**（AGENTS.md Section 10）
+6. **Mermaidでユースケース図を作成する**（`agents/mermaid-uml.md` §10）
 7. `docs/templates/requirements-spec.md` テンプレートを使い、USDM形式で要求仕様書を作成する
 8. トレーサビリティタグ（`REQ-XXX`, `SPEC-XXX`）を付与する
-9. `knowledge/review-perspectives.md` の「要求仕様レビュー」観点でセルフチェックする
-10. **コンテキストファイルを更新する**（`project-context.md`, `decisions-log.md`）
-11. **対話ログの「決定事項」「生成・更新された成果物」を記入し、索引を更新する**
+9. **組み込みプロジェクトの場合**: `knowledge/embedded-constraints.md` §1の逆質問テンプレートでHW境界条件を収集、§2の非機能要求テンプレートを適用する
+10. `knowledge/review-perspectives.md` の「要求仕様レビュー」観点でセルフチェックする
+11. **コンテキストファイルを更新する**（`project-context.md`, `decisions-log.md`）
+12. **対話ログの「決定事項」「生成・更新された成果物」を記入し、索引を更新する**
 
 ## Step 2: 方式設計（SWP.2）
 
@@ -87,12 +89,13 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 3. ソフトウェアのイメージ・構造について情報収集する
 4. `docs/templates/architecture-design.md` テンプレートを使い方式設計書を作成する
 5. **Mermaidでコンポーネント図、シーケンス図、ER図を作成する**（必須）
-6. **OSS選定がある場合、脆弱性チェックを行う**（AGENTS.md Section 15, EU CRA準拠）
+6. **OSS選定がある場合、脆弱性チェックを行う**（`agents/oss-and-compliance.md` §15, EU CRA準拠）
 7. トレーサビリティタグ（`ARC-XXX`）を付与し、`SPEC-XXX` との対応を明記する
 8. `knowledge/review-perspectives.md` の「方式設計レビュー」観点でセルフチェックする
 9. `knowledge/trouble-cases.md` の関連事例を確認する
-10. **コンテキストファイルを更新する**
-11. **対話ログの「決定事項」「生成・更新された成果物」を記入し、索引を更新する**
+10. **組み込みプロジェクトの場合**: `knowledge/embedded-constraints.md` §3（RTOS設計）、§4（複数CPU通信）を確認する
+11. **コンテキストファイルを更新する**
+12. **対話ログの「決定事項」「生成・更新された成果物」を記入し、索引を更新する**
 
 ## Step 3: 詳細設計（SWP.3）
 
@@ -102,36 +105,40 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 4. **「ソフトウェアの意図」セクションに日本語で詳細に意図・目的・背景を記述する**
 5. **Mermaidでクラス図、状態遷移図を作成する**（必須）
 6. **各関数の意図、引数の型・制約、戻り値、例外処理を詳細に記述する**（→ 単体テストのインプットになる）
-7. `AGENTS.md` Section 13 のセキュリティコーディング規約を確認し、セキュリティ考慮を記述する
+7. `agents/coding-standards.md` §13 のセキュリティコーディング規約を確認し、セキュリティ考慮を記述する
 8. トレーサビリティタグ（`DET-XXX`）を付与し、`ARC-XXX` との対応を明記する
 9. `knowledge/review-perspectives.md` の「詳細設計レビュー」観点でセルフチェックする
 10. **対話ログの「決定事項」「生成・更新された成果物」を記入し、索引を更新する**
 
 ## Step 4: 製造・単体テスト（SWP.3 〜 SWP.4） **TDD方式**
 
-> **Red → Green → Refactor** の順番で進める（AGENTS.md Section 11）
+> **Red → Green → Refactor** の順番で進める（`agents/coding-standards.md` §11）
 
 ### Step 4a: テスト仕様作成・テストコード作成（RED）
+
 1. **対話ログを作成する**
 2. 詳細設計書を読み込む
 3. `docs/templates/test-design.md` テンプレートを使い単体テスト仕様書を作成する
-4. **テストダブル（Mock/Stub/Driver）を設計する**（AGENTS.md Section 14）
-5. テストコードを先に実装する（テストダブル含む）
-6. テストコードに `@trace UT-XXX` タグを付与する
-7. **テストを実行し、失敗することを確認する**（全て FAILED）
+4. **テストダブル（Mock/Stub/Driver）を設計する**（`agents/coding-standards.md` §14）
+5. **組み込みプロジェクトの場合**: `knowledge/embedded-constraints.md` §6のテストフェーズ別観点マトリクスを参照し、型安全性・スタック・リソースリークのテストケースを追加する
+6. テストコードを先に実装する（テストダブル含む）
+7. テストコードに `@trace UT-XXX` タグを付与する
+8. **テストを実行し、失敗することを確認する**（全て FAILED）
 
 ### Step 4b: ソースコード実装（GREEN）
-8. テストを満たす最小限のソースコードを実装する
-9. ソースコードに `@trace DET-XXX` タグをDocstring/コメントに付与する
-10. **テストを実行し、全て合格することを確認する**（全て PASSED）
+
+1. テストを満たす最小限のソースコードを実装する
+2. ソースコードに `@trace DET-XXX` タグをDocstring/コメントに付与する
+3. **テストを実行し、全て合格することを確認する**（全て PASSED）
 
 ### Step 4c: リファクタリング（REFACTOR）
-11. **関数100行以内、サイクロマティック複雑度50以内を確認する**（AGENTS.md Section 12）
-12. 超過する場合は意図を変えずに関数を分割する
-13. **セキュリティコーディング規約に違反していないか確認する**（AGENTS.md Section 13）
-14. リファクタリング後もテストが全てPASSEDであることを確認する
-15. `knowledge/checklists.md` の「単体テスト」チェックリストで確認する
-16. **対話ログの「決定事項」「生成・更新された成果物」を記入し、索引を更新する**
+
+1. **関数100行以内、サイクロマティック複雑度50以内を確認する**（`agents/coding-standards.md` §12）
+2. 超過する場合は意図を変えずに関数を分割する
+3. **セキュリティコーディング規約に違反していないか確認する**（`agents/coding-standards.md` §13）
+4. リファクタリング後もテストが全てPASSEDであることを確認する
+5. `knowledge/checklists.md` の「単体テスト」チェックリストで確認する
+6. **対話ログの「決定事項」「生成・更新された成果物」を記入し、索引を更新する**
 
 ## Step 5: 結合テスト（SWP.5）
 
@@ -139,7 +146,7 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 2. 方式設計書を読み込む
 3. `docs/templates/test-design.md` テンプレートを使い結合テスト仕様書を作成する
 4. **Mermaidでコンポーネント間のシーケンス図を作成する**（必須）
-5. **テストダブル（Fake等）を設計する**（AGENTS.md Section 14）
+5. **テストダブル（Fake等）を設計する**（`agents/coding-standards.md` §14）
 6. テストケースに `@trace IT-XXX` タグを付与し、`ARC-XXX` との対応を明記する
 7. 結合テストを実行し、結果を記録する
 8. **対話ログの「決定事項」「生成・更新された成果物」を記入し、索引を更新する**
@@ -162,7 +169,7 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 
 1. `docs/templates/consistency-review.md` テンプレートをコピーして整合性レビューレポートを作成する
 2. チェック対象ペア（企画書↔要求仕様、要求仕様↔方式設計 等）を確認する
-3. AGENTS.md Section 17 の観点（用語統一、数値整合、スコープ、非機能要求、制約）でチェックする
+3. `agents/consistency-and-change.md` §17 の観点（用語統一、数値整合、スコープ、非機能要求、制約）でチェックする
 4. 矛盾・不整合を検出し、レポートに記録する
 
 ## Step 9: レトロスペクティブ（プロジェクト完了時 / マイルストーン到達時）
@@ -181,8 +188,8 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 2. 対象成果物を読み込む
 3. `knowledge/review-perspectives.md` の該当工程の観点表を参照する
 4. `knowledge/trouble-cases.md` の関連事例を確認する
-5. 前工程・次工程との整合性を確認する（AGENTS.md Section 17 参照）
-6. **レビュー技法を選択する**（AGENTS.md Section 26 参照）:
+5. 前工程・次工程との整合性を確認する（`agents/consistency-and-change.md` §17 参照）
+6. **レビュー技法を選択する**（`agents/review-and-quality.md` §26 参照）:
    - チェックリストレビュー（全成果物、最低限）
    - ウォークスルー（設計書、複雑な仕様 → 説明テンプレートで構造化して説明）
    - インスペクション（高リスク成果物 → 深刻度と分類コードを付与）
@@ -194,7 +201,7 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 > **すべての成果物提出前に、自己評価とメトリクス計測を行う。**
 
 1. 成果物生成後、`knowledge/self-evaluation.md` に基づく自己評価を実施する
-2. 該当工程のメトリクス（AGENTS.md Section 21）を計測する
+2. 該当工程のメトリクス（`agents/review-and-quality.md` §21）を計測する
 3. 自己評価レポートを成果物に添付する
 4. 必須ゲートの閾値を満たさない場合は修正してから提出する（最大3回の自動修正）
 5. メトリクス結果を `context/metrics-log.md` に記録する
@@ -218,5 +225,3 @@ description: Maestro ESPR 2.0準拠ソフトウェア開発ワークフロー
 5. 不整合があれば影響先を修正し、修正先についても①からチェックする（連鎖チェック）
 6. チェック結果を検証ログとしてコミットメッセージか対話ログに記録する
 7. `dependency-map.md` に新ファイル追加・構造変更があれば、マップ自体も更新する
-
-

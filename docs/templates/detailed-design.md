@@ -85,7 +85,7 @@ classDiagram
 | DET-001 | （名前） | `src/xxx/yyy.py` | （責務） | ARC-XXX |
 | DET-002 | （名前） | `src/xxx/zzz.py` | （責務） | ARC-XXX |
 
-> **コード品質制約**: 各関数は100行以内、サイクロマティック複雑度50以内とすること（AGENTS.md Section 12参照）。超過する場合は意図を変えずに関数を分割する。
+> **コード品質制約**: 各関数は100行以内、サイクロマティック複雑度50以内とすること（`agents/coding-standards.md` §12参照）。超過する場合は意図を変えずに関数を分割する。
 
 ### 3.3 モジュール依存関係（Mermaid）
 
@@ -171,7 +171,7 @@ INPUT: param1, param2
 5. RETURN Result(data=result)
 ```
 
-**セキュリティ考慮**: （AGENTS.md Section 13 に基づく考慮事項を記述）
+**セキュリティ考慮**: （`agents/coding-standards.md` §13 に基づく考慮事項を記述）
 
 - 入力のサニタイズ: （方法）
 - SQLインジェクション対策: （方法）

@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+### 2025-02-15
+
+- feat(maestro): 組み込みシステム開発知見を統合 — `knowledge/embedded-constraints.md` 新規作成、各工程エージェント・チェックリスト・レビュー観点に組み込み固有ステップ追加
+- refactor(maestro): AGENTS.md をモジュール化 — コア索引 + agents/ 配下10モジュールに分割
+
 ### 2025-02-14
 
 - docs(maestro): 利用マニュアル（manual.md）を新規作成 — 7つのユースケースで初心者向け解説

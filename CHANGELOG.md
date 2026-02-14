@@ -9,6 +9,7 @@
 ### 2025-02-14
 
 - docs(maestro): 利用マニュアル（manual.md）を新規作成 — 7つのユースケースで初心者向け解説
+- feat(maestro): 変更管理・差分整合性チェックを追加（AGENTS.md Section 28, dependency-map.md）
 
 - feat(maestro): メトリクス駆動 品質ゲートを追加（AGENTS.md Section 21, knowledge/quality-metrics.md）
 - feat(maestro): アーキテクチャ適合度テストを追加（AGENTS.md Section 22）

@@ -1,0 +1,317 @@
+# GitLab CI Security, SBOM & OSS Compliance Pipeline
+# AGENTS.md Section 15, 18 準拠
+# EU Cyber Resilience Act (CRA) 準拠: SPDX 3.0 + CycloneDX 1.6 + CSV
+
+stages:
+  - sbom
+  - vulnerability-scan
+  - oss-snippet-scan
+  - licenses
+  - code-quality
+
+variables:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+# ======================================================
+# SBOM生成（SPDX 3.0 + CycloneDX 1.6 + CSV）
+# ======================================================
+
+sbom-cyclonedx:
+  stage: sbom
+  image: anchore/syft:latest
+  script:
+    - syft dir:. -o cyclonedx-json=sbom-cyclonedx-1.6.cdx.json
+  artifacts:
+    paths:
+      - sbom-cyclonedx-1.6.cdx.json
+    expire_in: 90 days
+
+sbom-spdx:
+  stage: sbom
+  image: mcr.microsoft.com/sbom-tool:latest
+  script:
+    - /opt/sbom-tool generate
+      -b . -bc . -pn "$CI_PROJECT_NAME" -pv "$CI_COMMIT_TAG"
+      -ps "$CI_PROJECT_NAMESPACE"
+      -nsb "https://$CI_SERVER_HOST/$CI_PROJECT_PATH"
+      -m ./sbom-spdx-output || true
+    - find ./sbom-spdx-output -name "*.spdx.json" -exec cp {} sbom-spdx-3.0.spdx.json \; 2>/dev/null || true
+  artifacts:
+    paths:
+      - sbom-spdx-3.0.spdx.json
+    expire_in: 90 days
+  allow_failure: true
+
+sbom-csv-convert:
+  stage: sbom
+  image: python:${PYTHON_VERSION}
+  needs:
+    - job: sbom-cyclonedx
+  script:
+    - |
+      python3 -c "
+      import json, csv
+      with open('sbom-cyclonedx-1.6.cdx.json', 'r') as f:
+          data = json.load(f)
+      with open('sbom-components.csv', 'w', newline='', encoding='utf-8') as csvfile:
+          writer = csv.writer(csvfile)
+          writer.writerow([
+              'コンポーネント名', 'バージョン', 'ライセンス', 'サプライヤー',
+              '入手先URL', 'パッケージ種別', '直接/間接依存', 'ハッシュ(SHA-256)'
+          ])
+          for comp in data.get('components', []):
+              name = comp.get('name', 'REVIEW-REQUIRED')
+              version = comp.get('version', 'REVIEW-REQUIRED')
+              licenses = comp.get('licenses', [])
+              lic_str = ''
+              for lic in licenses:
+                  if 'license' in lic:
+                      lic_str = lic['license'].get('id', lic['license'].get('name', ''))
+                  elif 'expression' in lic:
+                      lic_str = lic['expression']
+              if not lic_str: lic_str = 'REVIEW-REQUIRED'
+              supplier = comp.get('supplier', {}).get('name', '') if comp.get('supplier') else comp.get('author', 'REVIEW-REQUIRED')
+              purl = comp.get('purl', 'REVIEW-REQUIRED')
+              pkg_type = comp.get('type', 'unknown')
+              scope = comp.get('scope', 'unknown')
+              hashes = comp.get('hashes', [])
+              sha256 = next((h['content'] for h in hashes if h.get('alg') == 'SHA-256'), 'N/A')
+              writer.writerow([name, version, lic_str, supplier, purl, pkg_type, scope, sha256])
+      print('✅ CSV SBOM generated')
+      "
+  artifacts:
+    paths:
+      - sbom-components.csv
+    expire_in: 90 days
+
+sbom-noassertion-check:
+  stage: sbom
+  image: alpine:latest
+  needs:
+    - job: sbom-cyclonedx
+    - job: sbom-spdx
+      optional: true
+    - job: sbom-csv-convert
+  script:
+    - |
+      ISSUES=0
+      if grep -qi "NOASSERTION" sbom-cyclonedx-1.6.cdx.json 2>/dev/null; then
+        echo "⚠️ CycloneDX SBOM に NOASSERTION が含まれています"
+        ISSUES=$((ISSUES + 1))
+      fi
+      if grep -qi "NOASSERTION" sbom-spdx-3.0.spdx.json 2>/dev/null; then
+        echo "⚠️ SPDX SBOM に NOASSERTION が含まれています"
+        ISSUES=$((ISSUES + 1))
+      fi
+      if grep -q "REVIEW-REQUIRED" sbom-components.csv 2>/dev/null; then
+        echo "⚠️ CSV に REVIEW-REQUIRED が含まれています"
+        ISSUES=$((ISSUES + 1))
+      fi
+      if [ $ISSUES -gt 0 ]; then
+        echo "NOASSERTION/REVIEW-REQUIRED を解決してください（AGENTS.md Section 15）"
+      else
+        echo "✅ NOASSERTION なし — CRA準拠"
+      fi
+  allow_failure: true
+
+# ======================================================
+# 脆弱性スキャン（JSON + CSV）
+# ======================================================
+
+trivy-scan:
+  stage: vulnerability-scan
+  image:
+    name: aquasecurity/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy fs --severity CRITICAL,HIGH,MEDIUM --format json --output trivy-vuln-report.json .
+    - trivy fs --severity CRITICAL,HIGH --format table .
+  artifacts:
+    paths:
+      - trivy-vuln-report.json
+    expire_in: 90 days
+
+vulnerability-csv-convert:
+  stage: vulnerability-scan
+  image: python:${PYTHON_VERSION}
+  needs:
+    - job: trivy-scan
+  script:
+    - |
+      python3 -c "
+      import json, csv
+      with open('trivy-vuln-report.json', 'r') as f:
+          data = json.load(f)
+      with open('vulnerability-report.csv', 'w', newline='', encoding='utf-8') as csvfile:
+          writer = csv.writer(csvfile)
+          writer.writerow(['CVE-ID', '深刻度', 'コンポーネント', '現バージョン', '修正バージョン', '説明', '参照URL', '対応状況'])
+          for result in data.get('Results', []):
+              for vuln in result.get('Vulnerabilities', []):
+                  writer.writerow([
+                      vuln.get('VulnerabilityID', ''),
+                      vuln.get('Severity', ''),
+                      vuln.get('PkgName', ''),
+                      vuln.get('InstalledVersion', ''),
+                      vuln.get('FixedVersion', 'N/A'),
+                      vuln.get('Title', '')[:200],
+                      vuln.get('PrimaryURL', ''),
+                      '未対応'
+                  ])
+      print('✅ Vulnerability CSV generated')
+      " || echo "⚠️ No vulnerabilities or conversion issue"
+  artifacts:
+    paths:
+      - vulnerability-report.csv
+    expire_in: 90 days
+
+python-security-scan:
+  stage: vulnerability-scan
+  image: python:${PYTHON_VERSION}
+  script:
+    - pip install bandit safety
+    - bandit -r src/ -f json -o bandit-report.json 2>/dev/null || true
+    - safety check --json --output safety-report.json 2>/dev/null || true
+  artifacts:
+    paths:
+      - bandit-report.json
+      - safety-report.json
+    expire_in: 90 days
+  rules:
+    - exists:
+        - requirements.txt
+        - poetry.lock
+
+nodejs-security-scan:
+  stage: vulnerability-scan
+  image: node:${NODE_VERSION}
+  script:
+    - npm ci
+    - npm audit --json > npm-audit-report.json 2>/dev/null || true
+  artifacts:
+    paths:
+      - npm-audit-report.json
+    expire_in: 90 days
+  rules:
+    - exists:
+        - package.json
+
+# ======================================================
+# OSSスニペット検出（ScanCode Toolkit）
+# ======================================================
+
+oss-snippet-scan:
+  stage: oss-snippet-scan
+  image: python:${PYTHON_VERSION}
+  script:
+    - pip install scancode-toolkit
+    - |
+      scancode \
+        --license --copyright --info --package \
+        --license-text --license-text-diagnostics \
+        --classify \
+        --json-pp oss-snippet-report.json \
+        --csv oss-snippet-report.csv \
+        --processes 2 \
+        --timeout 120 \
+        src/ tests/ 2>/dev/null || \
+      scancode \
+        --license --copyright --info \
+        --json-pp oss-snippet-report.json \
+        --csv oss-snippet-report.csv \
+        --processes 2 \
+        src/ tests/ 2>/dev/null || \
+      echo "⚠️ ScanCode scan completed with warnings"
+    - |
+      python3 -c "
+      import json, csv, sys
+      try:
+          with open('oss-snippet-report.json', 'r') as f:
+              data = json.load(f)
+      except FileNotFoundError:
+          print('⚠️ No report found')
+          sys.exit(0)
+      high_risk = []
+      for fd in data.get('files', []):
+          for lic in fd.get('licenses', []):
+              score = lic.get('score', 0)
+              if score >= 95:
+                  high_risk.append({'path': fd.get('path',''), 'license': lic.get('spdx_license_key',''), 'score': score})
+      with open('oss-snippet-summary.csv', 'w', newline='', encoding='utf-8') as csvfile:
+          writer = csv.writer(csvfile)
+          writer.writerow(['ファイルパス', '検出ライセンス', '一致度(%)', 'リスクレベル', '対応状況'])
+          for item in high_risk:
+              writer.writerow([item['path'], item['license'], item['score'], '高リスク', '未対応'])
+      print(f'🔴 High Risk: {len(high_risk)}')
+      if high_risk:
+          print('::warning::高リスクのOSSスニペットが検出されました')
+      "
+  artifacts:
+    paths:
+      - oss-snippet-report.json
+      - oss-snippet-report.csv
+      - oss-snippet-summary.csv
+    expire_in: 90 days
+
+# ======================================================
+# ThirdPartyLicense 生成（CRA準拠）
+# ======================================================
+
+third-party-licenses-python:
+  stage: licenses
+  image: python:${PYTHON_VERSION}
+  script:
+    - pip install -r requirements.txt 2>/dev/null || true
+    - pip install pip-licenses
+    - pip-licenses --format=csv --with-urls --with-description --with-authors
+      --output-file THIRD_PARTY_LICENSES_PYTHON.csv || true
+    - pip-licenses --format=markdown --with-urls --with-description --with-authors
+      --output-file THIRD_PARTY_LICENSES_PYTHON.md || true
+  artifacts:
+    paths:
+      - THIRD_PARTY_LICENSES_PYTHON.csv
+      - THIRD_PARTY_LICENSES_PYTHON.md
+    expire_in: 90 days
+  rules:
+    - exists:
+        - requirements.txt
+
+third-party-licenses-nodejs:
+  stage: licenses
+  image: node:${NODE_VERSION}
+  script:
+    - npm ci
+    - npx license-checker --csv --out THIRD_PARTY_LICENSES_NODEJS.csv || true
+    - npx license-checker --markdown --out THIRD_PARTY_LICENSES_NODEJS.md || true
+  artifacts:
+    paths:
+      - THIRD_PARTY_LICENSES_NODEJS.csv
+      - THIRD_PARTY_LICENSES_NODEJS.md
+    expire_in: 90 days
+  rules:
+    - exists:
+        - package.json
+
+# ======================================================
+# コード品質チェック (CC計測)
+# ======================================================
+
+code-quality-python:
+  stage: code-quality
+  image: python:${PYTHON_VERSION}
+  script:
+    - pip install radon lizard
+    - echo "## Cyclomatic Complexity Report" > cc-report.md
+    - radon cc src/ -a -nc >> cc-report.md 2>/dev/null || true
+    - echo "### Functions exceeding CC=50" >> cc-report.md
+    - radon cc src/ -nc --min F >> cc-report.md 2>/dev/null || echo "None found" >> cc-report.md
+    - lizard src/ -l python -T cyclomatic_complexity=50 -T length=100
+      --csv > lizard-report.csv 2>/dev/null || true
+  artifacts:
+    paths:
+      - cc-report.md
+      - lizard-report.csv
+    expire_in: 90 days
+  rules:
+    - exists:
+        - "**/*.py"

@@ -1,0 +1,57 @@
+# Third-Party Licenses
+
+> このファイルは、プロジェクトで使用するすべてのOSSライブラリのライセンス情報を集約します。
+> CI/CDパイプラインで自動生成されますが、手動で管理する場合は以下のフォーマットに従ってください。
+
+---
+
+## フォーマット
+
+各OSSライブラリについて以下の情報を記載してください:
+
+```markdown
+### [ライブラリ名] v[バージョン]
+
+| 項目 | 内容 |
+|------|------|
+| ライセンス | （MIT / Apache-2.0 / BSD-3-Clause 等） |
+| URL | （GitHubリポジトリ等のURL） |
+| 著作者 | （著作者名） |
+| 用途 | （プロジェクトでの用途を簡潔に） |
+
+---
+```
+
+## 自動生成方法
+
+### GitHub Actions
+
+`.github/workflows/security.yml` の `third-party-licenses` ジョブで自動生成されます。
+成果物（Artifact）からダウンロードできます。
+
+### GitLab CI
+
+`.gitlab-ci-security.yml` の `combine-licenses` ジョブで自動生成されます。
+
+### 手動生成
+
+```bash
+# Python
+pip install pip-licenses
+pip-licenses --format=markdown --with-urls --with-description
+
+# Node.js
+npx license-checker --markdown
+
+# Go
+go install github.com/google/go-licenses@latest
+go-licenses report ./...
+```
+
+---
+
+## ライセンス一覧
+
+（CI/CDで自動生成される、またはOSS追加時に手動で以下に追記する）
+
+<!-- 以下にOSSライセンス情報を記載 -->

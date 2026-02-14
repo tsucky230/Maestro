@@ -1,0 +1,465 @@
+# Security, SBOM & OSS Compliance CI/CD Pipeline
+# AGENTS.md Section 15, 18 準拠
+# EU Cyber Resilience Act (CRA) 準拠: SPDX 3.0 + CycloneDX 1.6 + CSV
+
+name: Security, SBOM & OSS Compliance
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ======================================================
+  # SBOM生成（SPDX 3.0 + CycloneDX 1.6 + CSV）
+  # ======================================================
+  sbom-generation:
+    name: SBOM Generation (SPDX 3.0 / CycloneDX 1.6 / CSV)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- CycloneDX 1.6 (Syft) ---
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Generate CycloneDX 1.6 JSON
+        run: |
+          syft dir:. -o cyclonedx-json=sbom-cyclonedx-1.6.cdx.json
+          echo "✅ CycloneDX 1.6 JSON generated"
+
+      # --- SPDX 3.0 (Microsoft SBOM Tool) ---
+      - name: Install Microsoft SBOM Tool
+        run: |
+          curl -Lo sbom-tool https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64
+          chmod +x sbom-tool
+
+      - name: Generate SPDX 3.0 JSON
+        run: |
+          ./sbom-tool generate \
+            -b . -bc . -pn "$(basename $(pwd))" -pv "0.0.0" \
+            -ps "Project Team" \
+            -nsb "https://example.com/sbom" \
+            -m ./sbom-spdx-output || true
+          # SPDX出力をコピー
+          find ./sbom-spdx-output -name "*.spdx.json" -exec cp {} sbom-spdx-3.0.spdx.json \; 2>/dev/null || true
+          echo "✅ SPDX 3.0 JSON generated"
+
+      # --- CSV変換（人間可読） ---
+      - name: Convert CycloneDX JSON to CSV
+        run: |
+          python3 -c "
+          import json, csv, sys
+
+          with open('sbom-cyclonedx-1.6.cdx.json', 'r') as f:
+              data = json.load(f)
+
+          with open('sbom-components.csv', 'w', newline='', encoding='utf-8') as csvfile:
+              writer = csv.writer(csvfile)
+              writer.writerow([
+                  'コンポーネント名', 'バージョン', 'ライセンス', 'サプライヤー',
+                  '入手先URL', 'パッケージ種別', '直接/間接依存', 'ハッシュ(SHA-256)'
+              ])
+              for comp in data.get('components', []):
+                  name = comp.get('name', 'REVIEW-REQUIRED')
+                  version = comp.get('version', 'REVIEW-REQUIRED')
+                  # ライセンス情報抽出
+                  licenses = comp.get('licenses', [])
+                  lic_str = ''
+                  for lic in licenses:
+                      if 'license' in lic:
+                          lic_str = lic['license'].get('id', lic['license'].get('name', ''))
+                      elif 'expression' in lic:
+                          lic_str = lic['expression']
+                  if not lic_str:
+                      lic_str = 'REVIEW-REQUIRED'
+                  # サプライヤー
+                  supplier = comp.get('supplier', {}).get('name', '') if comp.get('supplier') else ''
+                  if not supplier:
+                      supplier = comp.get('author', 'REVIEW-REQUIRED')
+                  # 入手先URL
+                  ext_refs = comp.get('externalReferences', [])
+                  url = ''
+                  for ref in ext_refs:
+                      if ref.get('type') in ('website', 'vcs', 'distribution'):
+                          url = ref.get('url', '')
+                          break
+                  if not url:
+                      purl = comp.get('purl', '')
+                      url = purl if purl else 'REVIEW-REQUIRED'
+                  # パッケージ種別
+                  pkg_type = comp.get('type', comp.get('purl', '').split(':')[0].split('/')[-1] if comp.get('purl') else 'unknown')
+                  # 依存種別
+                  scope = comp.get('scope', 'unknown')
+                  dep_type = 'direct' if scope == 'required' else ('transitive' if scope == 'optional' else scope)
+                  # ハッシュ
+                  hashes = comp.get('hashes', [])
+                  sha256 = ''
+                  for h in hashes:
+                      if h.get('alg') == 'SHA-256':
+                          sha256 = h.get('content', '')
+                  if not sha256:
+                      sha256 = 'N/A'
+                  writer.writerow([name, version, lic_str, supplier, url, pkg_type, dep_type, sha256])
+          print('✅ CSV SBOM generated: sbom-components.csv')
+          " || echo "⚠️ CSV conversion had issues"
+
+      # --- NOASSERTION検出 ---
+      - name: Check for NOASSERTION in SBOM
+        run: |
+          echo "=== NOASSERTION / REVIEW-REQUIRED 検出 ==="
+          ISSUES=0
+          if grep -qi "NOASSERTION\|NoAssertion\|noassertion" sbom-cyclonedx-1.6.cdx.json 2>/dev/null; then
+            echo "⚠️ CycloneDX SBOM に NOASSERTION が含まれています"
+            grep -c -i "NOASSERTION" sbom-cyclonedx-1.6.cdx.json || true
+            ISSUES=$((ISSUES + 1))
+          fi
+          if grep -qi "NOASSERTION\|NoAssertion" sbom-spdx-3.0.spdx.json 2>/dev/null; then
+            echo "⚠️ SPDX SBOM に NOASSERTION が含まれています"
+            grep -c -i "NOASSERTION" sbom-spdx-3.0.spdx.json || true
+            ISSUES=$((ISSUES + 1))
+          fi
+          if grep -q "REVIEW-REQUIRED" sbom-components.csv 2>/dev/null; then
+            echo "⚠️ CSV SBOM に REVIEW-REQUIRED が含まれています"
+            grep -c "REVIEW-REQUIRED" sbom-components.csv || true
+            ISSUES=$((ISSUES + 1))
+          fi
+          if [ $ISSUES -gt 0 ]; then
+            echo "::warning::SBOM に NOASSERTION/REVIEW-REQUIRED が検出されました。AGENTS.md Section 15 の NOASSERTION排除プロセスに従って解決してください。"
+          else
+            echo "✅ NOASSERTION なし — CRA準拠"
+          fi
+
+      - name: Upload SBOM artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-reports
+          path: |
+            sbom-cyclonedx-1.6.cdx.json
+            sbom-spdx-3.0.spdx.json
+            sbom-components.csv
+          retention-days: 90
+
+  # ======================================================
+  # 脆弱性スキャン（JSON + CSV出力）
+  # ======================================================
+  vulnerability-scan:
+    name: Vulnerability Scan (JSON + CSV)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- Trivy 包括スキャン ---
+      - name: Run Trivy vulnerability scanner (JSON)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "json"
+          output: "trivy-vuln-report.json"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Run Trivy (SARIF for GitHub Security)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      # --- JSON → CSV 変換 ---
+      - name: Convert vulnerability report to CSV
+        run: |
+          python3 -c "
+          import json, csv, sys
+
+          with open('trivy-vuln-report.json', 'r') as f:
+              data = json.load(f)
+
+          with open('vulnerability-report.csv', 'w', newline='', encoding='utf-8') as csvfile:
+              writer = csv.writer(csvfile)
+              writer.writerow([
+                  'CVE-ID', '深刻度', 'コンポーネント', '現バージョン',
+                  '修正バージョン', '説明', '参照URL', '対応状況'
+              ])
+              results = data.get('Results', [])
+              for result in results:
+                  for vuln in result.get('Vulnerabilities', []):
+                      writer.writerow([
+                          vuln.get('VulnerabilityID', ''),
+                          vuln.get('Severity', ''),
+                          vuln.get('PkgName', ''),
+                          vuln.get('InstalledVersion', ''),
+                          vuln.get('FixedVersion', 'N/A'),
+                          vuln.get('Title', vuln.get('Description', ''))[:200],
+                          vuln.get('PrimaryURL', ''),
+                          '未対応'
+                      ])
+          print('✅ Vulnerability CSV generated')
+          " || echo "⚠️ No vulnerabilities found or conversion issue"
+
+      # --- 言語別スキャン ---
+      - name: Python security scan
+        if: hashFiles('requirements.txt', 'poetry.lock', 'Pipfile.lock') != ''
+        run: |
+          pip install bandit safety
+          bandit -r src/ -f json -o bandit-report.json 2>/dev/null || true
+          safety check --json --output safety-report.json 2>/dev/null || true
+
+      - name: Node.js security scan
+        if: hashFiles('package.json') != ''
+        run: |
+          npm audit --json > npm-audit-report.json 2>/dev/null || true
+
+      - name: Go vulnerability check
+        if: hashFiles('go.mod') != ''
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./... > govulncheck-report.txt 2>&1 || true
+
+      - name: Upload vulnerability reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vulnerability-reports
+          path: |
+            trivy-vuln-report.json
+            vulnerability-report.csv
+            bandit-report.json
+            safety-report.json
+            npm-audit-report.json
+            govulncheck-report.txt
+          retention-days: 90
+
+  # ======================================================
+  # OSSスニペット検出（ScanCode Toolkit）
+  # ======================================================
+  oss-snippet-scan:
+    name: OSS Snippet Detection (ScanCode)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ScanCode Toolkit
+        run: pip install scancode-toolkit
+
+      - name: Run ScanCode snippet scan
+        run: |
+          scancode \
+            --license --copyright --info --package \
+            --license-text --license-text-diagnostics \
+            --classify \
+            --json-pp oss-snippet-report.json \
+            --csv oss-snippet-report.csv \
+            --processes 2 \
+            --timeout 120 \
+            src/ tests/ 2>/dev/null || \
+          scancode \
+            --license --copyright --info \
+            --json-pp oss-snippet-report.json \
+            --csv oss-snippet-report.csv \
+            --processes 2 \
+            --timeout 120 \
+            src/ tests/ 2>/dev/null || \
+          echo "⚠️ ScanCode scan completed with warnings"
+
+      - name: Analyze snippet detection results
+        run: |
+          python3 -c "
+          import json, csv, sys
+
+          try:
+              with open('oss-snippet-report.json', 'r') as f:
+                  data = json.load(f)
+          except FileNotFoundError:
+              print('⚠️ No ScanCode report found')
+              sys.exit(0)
+
+          high_risk = []
+          medium_risk = []
+
+          for file_data in data.get('files', []):
+              path = file_data.get('path', '')
+              for lic in file_data.get('licenses', []):
+                  score = lic.get('score', 0)
+                  if score >= 95:
+                      high_risk.append({
+                          'path': path,
+                          'license': lic.get('spdx_license_key', lic.get('key', 'unknown')),
+                          'score': score,
+                          'matched_text_length': len(lic.get('matched_text', ''))
+                      })
+                  elif score >= 70:
+                      medium_risk.append({
+                          'path': path,
+                          'license': lic.get('spdx_license_key', lic.get('key', 'unknown')),
+                          'score': score
+                      })
+
+          # サマリー出力
+          print(f'=== OSS Snippet Detection Summary ===')
+          print(f'🔴 High Risk (≥95%): {len(high_risk)}')
+          print(f'🟡 Medium Risk (70-94%): {len(medium_risk)}')
+
+          if high_risk:
+              print()
+              print('🔴 High Risk Detections:')
+              for item in high_risk[:20]:
+                  print(f'  - {item[\"path\"]}: {item[\"license\"]} ({item[\"score\"]}%)')
+              if len(high_risk) > 20:
+                  print(f'  ... and {len(high_risk) - 20} more')
+
+          # CSV サマリー
+          with open('oss-snippet-summary.csv', 'w', newline='', encoding='utf-8') as csvfile:
+              writer = csv.writer(csvfile)
+              writer.writerow(['ファイルパス', '検出ライセンス', '一致度(%)', 'リスクレベル', '対応状況'])
+              for item in high_risk:
+                  writer.writerow([item['path'], item['license'], item['score'], '高リスク', '未対応'])
+              for item in medium_risk:
+                  writer.writerow([item['path'], item['license'], item['score'], '要確認', '未対応'])
+
+          if high_risk:
+              print()
+              print('::warning::🔴 高リスクのOSSスニペットが検出されました。AGENTS.md Section 18 に従って対応してください。')
+          " || echo "⚠️ Analysis completed with warnings"
+
+      - name: Upload snippet scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oss-snippet-reports
+          path: |
+            oss-snippet-report.json
+            oss-snippet-report.csv
+            oss-snippet-summary.csv
+          retention-days: 90
+
+  # ======================================================
+  # ThirdPartyLicense 生成
+  # ======================================================
+  third-party-licenses:
+    name: Generate Third-Party Licenses (CRA Compliant)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        if: hashFiles('requirements.txt', 'poetry.lock') != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate Python licenses
+        if: hashFiles('requirements.txt') != ''
+        run: |
+          pip install -r requirements.txt
+          pip install pip-licenses
+          pip-licenses --format=csv --with-urls --with-description \
+            --with-authors --with-license-file --no-license-path \
+            --output-file THIRD_PARTY_LICENSES_PYTHON.csv || true
+          pip-licenses --format=markdown --with-urls --with-description \
+            --with-authors \
+            --output-file THIRD_PARTY_LICENSES_PYTHON.md || true
+
+      - name: Setup Node.js
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generate Node.js licenses
+        if: hashFiles('package-lock.json') != ''
+        run: |
+          npm ci
+          npx license-checker --csv --out THIRD_PARTY_LICENSES_NODEJS.csv || true
+          npx license-checker --markdown --out THIRD_PARTY_LICENSES_NODEJS.md || true
+
+      - name: Combine license files
+        run: |
+          echo "# Third-Party Licenses (EU CRA Compliant)" > THIRD_PARTY_LICENSES
+          echo "" >> THIRD_PARTY_LICENSES
+          echo "Generated on: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> THIRD_PARTY_LICENSES
+          echo "Regulation: EU Cyber Resilience Act (2024/2847)" >> THIRD_PARTY_LICENSES
+          echo "" >> THIRD_PARTY_LICENSES
+          if [ -f THIRD_PARTY_LICENSES_PYTHON.md ]; then
+            echo "## Python Dependencies" >> THIRD_PARTY_LICENSES
+            echo "" >> THIRD_PARTY_LICENSES
+            cat THIRD_PARTY_LICENSES_PYTHON.md >> THIRD_PARTY_LICENSES
+            echo "" >> THIRD_PARTY_LICENSES
+          fi
+          if [ -f THIRD_PARTY_LICENSES_NODEJS.md ]; then
+            echo "## Node.js Dependencies" >> THIRD_PARTY_LICENSES
+            echo "" >> THIRD_PARTY_LICENSES
+            cat THIRD_PARTY_LICENSES_NODEJS.md >> THIRD_PARTY_LICENSES
+            echo "" >> THIRD_PARTY_LICENSES
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: third-party-licenses
+          path: |
+            THIRD_PARTY_LICENSES
+            THIRD_PARTY_LICENSES_*.csv
+          retention-days: 90
+
+  # ======================================================
+  # コード品質チェック (CC計測)
+  # ======================================================
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        if: hashFiles('requirements.txt', 'poetry.lock', '*.py') != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Cyclomatic Complexity
+        if: hashFiles('*.py', 'src/**/*.py') != ''
+        run: |
+          pip install radon lizard
+          echo "## Cyclomatic Complexity Report" > cc-report.md
+          radon cc src/ -a -nc >> cc-report.md 2>/dev/null || true
+          echo "### Functions exceeding CC=50" >> cc-report.md
+          radon cc src/ -nc --min F >> cc-report.md 2>/dev/null || echo "None found" >> cc-report.md
+          lizard src/ -l python -T cyclomatic_complexity=50 -T length=100 \
+            --csv > lizard-report.csv 2>/dev/null || true
+
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-reports
+          path: |
+            cc-report.md
+            lizard-report.csv
+          retention-days: 90

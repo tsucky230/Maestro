@@ -8,6 +8,14 @@
 
 ### 2025-02-14
 
+- feat(maestro): メトリクス駆動 品質ゲートを追加（AGENTS.md Section 21, knowledge/quality-metrics.md）
+- feat(maestro): アーキテクチャ適合度テストを追加（AGENTS.md Section 22）
+- feat(maestro): 形式的仕様記述（軽量版）を追加（AGENTS.md Section 23）
+- feat(maestro): FMEA/FTA統合を追加（AGENTS.md Section 24, docs/templates/fmea-fta.md）
+- feat(maestro): エージェント自己評価メカニズムを追加（AGENTS.md Section 25, knowledge/self-evaluation.md）
+- feat(maestro): レビュープロトコルを追加（AGENTS.md Section 26, review-perspectives.md更新）
+- feat(maestro): マルチプロジェクト学習を追加（AGENTS.md Section 27, knowledge/patterns.md, docs/templates/retrospective.md）
+- docs(maestro): ワークフロー・チェックリスト・README・CLAUDE.md・copilot-instructions.md を全面更新
 - feat(maestro): CHANGELOG.md 作成、変更履歴・コミットルールをワークフローに追加
 - feat(maestro): ブランチ戦略・起動時インタラクティブメニューを追加（AGENTS.md Section 20）
 - feat(maestro): 会話ログ機能を追加（AGENTS.md Section 19, テンプレート, ワークフロー統合）

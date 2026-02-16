@@ -36,6 +36,7 @@ Maestroは、ESPR 2.0（組込みシステム開発プロセス参照）のプ�
 | 9 | 形式的設計 | [`agents/formal-design.md`](agents/formal-design.md) | §22, §23, §24 | アーキテクチャ適合度・形式仕様・FMEA/FTA |
 | 10 | マルチプロジェクト | [`agents/multi-project-learning.md`](agents/multi-project-learning.md) | §27 | マルチプロジェクト学習・レトロスペクティブ |
 | 11 | 品質守護神 | [`agents/quality-guardian.md`](agents/quality-guardian.md) | | コードクローン検出・品質監視 |
+| 12 | QAエンジニア | [`agents/qa-engineer.md`](agents/qa-engineer.md) | | ソフトウェア結合・総合テスト設計 (SWP.5/6) |
 
 ---
 

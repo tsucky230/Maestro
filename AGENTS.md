@@ -35,6 +35,7 @@ Maestroは、ESPR 2.0（組込みシステム開発プロセス参照）のプ�
 | 8 | ブランチ/起動 | [`agents/branch-and-onboarding.md`](agents/branch-and-onboarding.md) | §20 | ブランチ戦略・起動時オンボーディング |
 | 9 | 形式的設計 | [`agents/formal-design.md`](agents/formal-design.md) | §22, §23, §24 | アーキテクチャ適合度・形式仕様・FMEA/FTA |
 | 10 | マルチプロジェクト | [`agents/multi-project-learning.md`](agents/multi-project-learning.md) | §27 | マルチプロジェクト学習・レトロスペクティブ |
+| 11 | 品質守護神 | [`agents/quality-guardian.md`](agents/quality-guardian.md) | | コードクローン検出・品質監視 |
 
 ---
 

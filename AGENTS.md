@@ -29,7 +29,7 @@ Maestroは、ESPR 2.0（組込みシステム開発プロセス参照）のプ�
 | 2 | レビュー・品質 | [`agents/review-and-quality.md`](agents/review-and-quality.md) | §5, §21, §25, §26 | レビュー手順・品質ゲート・自己評価・レビュープロトコル |
 | 3 | サブエージェント | [`agents/sub-agent-and-context.md`](agents/sub-agent-and-context.md) | §9, §19 | サブエージェント委譲・対話ログ |
 | 4 | Mermaid/UML | [`agents/mermaid-uml.md`](agents/mermaid-uml.md) | §10 | Mermaid UML図規約 |
-| 5 | コーディング規約 | [`agents/coding-standards.md`](agents/coding-standards.md) | §11, §12, §13, §14 | TDD・コード品質・セキュリティ・テストダブル |
+| 5 | コーディング規約 | [`agents/coding-standards.md`](agents/coding-standards.md) | §11-15 | TDD・コード品質・セキュリティ・テストダブル・AIドキュメント |
 | 6 | OSS/コンプライアンス | [`agents/oss-and-compliance.md`](agents/oss-and-compliance.md) | §15, §18 | OSS/SBOM/CRA管理・OSSスニペット検出 |
 | 7 | 整合性・変更管理 | [`agents/consistency-and-change.md`](agents/consistency-and-change.md) | §17, §28 | 成果物間整合性レビュー・変更管理 |
 | 8 | ブランチ/起動 | [`agents/branch-and-onboarding.md`](agents/branch-and-onboarding.md) | §20 | ブランチ戦略・起動時オンボーディング |

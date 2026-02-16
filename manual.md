@@ -31,6 +31,23 @@ Maestroはこれらの問題を防ぐために、**AIに「プロの開発プロ
 
 ---
 
+## 📘 エージェント役割一覧メニュー
+
+| ファイル名 | 役割・用途 |
+|------------|------------|
+| [branch-and-onboarding.md](agents/branch-and-onboarding.md) | **ブランチ戦略・オンボーディング**: 開発の始め方とブランチルール |
+| [coding-standards.md](agents/coding-standards.md) | **コーディング規約**: 実装ルール、TDD、セキュリティ基準 |
+| [consistency-and-change.md](agents/consistency-and-change.md) | **整合性・変更管理**: 成果物間の整合性チェックと変更管理 |
+| [formal-design.md](agents/formal-design.md) | **形式的設計**: アーキテクチャ適合度、契約による設計 |
+| [mermaid-uml.md](agents/mermaid-uml.md) | **Mermaid UML図**: 作図ルールとテンプレート |
+| [multi-project-learning.md](agents/multi-project-learning.md) | **マルチプロジェクト学習**: 振り返りと知見の蓄積 |
+| [oss-and-compliance.md](agents/oss-and-compliance.md) | **OSS・コンプライアンス**: ライセンス管理、SBOM、脆弱性対応 |
+| [process-and-traceability.md](agents/process-and-traceability.md) | **プロセス・トレーサビリティ**: V字モデル工程と追跡可能性 |
+| [review-and-quality.md](agents/review-and-quality.md) | **レビュー・品質管理**: 品質ゲート、自己評価、レビュー観点 |
+| [sub-agent-and-context.md](agents/sub-agent-and-context.md) | **サブエージェント連携**: タスク委譲と対話ログ記録 |
+
+---
+
 ## 🌿 最初に知っておくこと — ブランチのルール
 
 Maestroには1つだけ**絶対に守るべきルール**があります:

@@ -749,6 +749,47 @@ python scripts/inject_project.py <プロジェクト名> <リポジトリURL>
 
 ---
 
+## 💻 開発ガイド: プロジェクトの実行
+
+開発中のプロジェクト（例: `projects/pdf2md`）を動作させるための手順です。
+
+### 1. ブランチの切り替え
+
+開発作業は通常、機能ごとのブランチ（`feature/...`）で行われます。
+
+```bash
+git checkout feature/your-feature-branch
+```
+
+### 2. プロジェクトディレクトリへの移動
+
+```bash
+cd projects/pdf2md
+```
+
+### 3. アプリケーションの実行 (uv)
+
+`pyproject.toml` により管理されているため、`uv` コマンドで依存関係を解決しつつ実行できます。
+
+```bash
+# SCRIPT (推奨)
+uv run pdf2md
+
+# または直接ファイルを指定
+uv run python src/pdf2md/main.py
+```
+
+---
+
+## 📚 ナレッジベース (Knowledge)
+
+`knowledge/` フォルダには、プロジェクト横断的な知見が蓄積されます。
+
+- **`embedded-constraints.md`**: 組み込みソフトウェア制約事項
+- **`embedded_c_review_points.md`**: 組み込みC言語レビュー観点
+
+---
+
 ## ❓ よくある質問
 
 ### Q: どのエージェントを使えばいいですか？

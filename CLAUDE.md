@@ -78,6 +78,15 @@ ESPR 2.0準拠のソフトウェア開発エージェントフレームワーク
 - 対話終了時に `conversation-index.md` を更新する
 - 対話の知見は `knowledge/trouble-cases.md` に反映する
 
+### 任意機能: チャット生ログ（Raw Transcript）
+
+- デフォルトは **OFF**
+- ユーザーが「ログを取って」「生ログを開始して」等を指示した場合のみ開始する
+- `docs/templates/chat-transcript-log.md` テンプレートで記録する
+- フレームワーク更新（main相当）は `LOG/` に保存し、`.gitignore` に含める
+- プロジェクト作業は `.gitignore` 追加可否をユーザーに確認して選択する
+- 生ログ保存時は **モデル名 / 開始-終了時刻 / トークン消費量（入力・出力・合計）** を記録する
+
 ### 整合性レビュー（`agents/consistency-and-change.md` §17）
 
 - 企画書↔仕様書など上流↔下流文書間の矛盾・不整合を検出する

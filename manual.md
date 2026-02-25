@@ -43,6 +43,8 @@ Maestroはこれらの問題を防ぐために、**AIに「プロの開発プロ
 | [multi-project-learning.md](agents/multi-project-learning.md) | **マルチプロジェクト学習**: 振り返りと知見の蓄積 |
 | [oss-and-compliance.md](agents/oss-and-compliance.md) | **OSS・コンプライアンス**: ライセンス管理、SBOM、脆弱性対応 |
 | [process-and-traceability.md](agents/process-and-traceability.md) | **プロセス・トレーサビリティ**: V字モデル工程と追跡可能性 |
+| [qa-engineer.md](agents/qa-engineer.md) | **QAエンジニア支援**: SWP.5/6（結合・適格性確認）のテスト設計を支援 |
+| [quality-guardian.md](agents/quality-guardian.md) | **品質守護神**: コードクローン検出・品質監視の観点を提供 |
 | [review-and-quality.md](agents/review-and-quality.md) | **レビュー・品質管理**: 品質ゲート、自己評価、レビュー観点 |
 | [sub-agent-and-context.md](agents/sub-agent-and-context.md) | **サブエージェント連携**: タスク委譲と対話ログ記録 |
 
@@ -314,7 +316,7 @@ Maestroは「V字モデル」という開発プロセスに従います。難し
 
 **ここでもレビューと修正:**
 
-```
+```text
 あなた: コンポーネント図を見たけど、認証サーバーが独立してるのは
         うちの規模だと大げさすぎる。社内のActive Directoryと
         連携する方式にして。
@@ -325,7 +327,7 @@ Maestroは「V字モデル」という開発プロセスに従います。難し
   - FMEA: AD障害時のフォールバック（ローカルキャッシュ認証）を追加
 ```
 
-```
+```text
 あなた: FMEAにネットワーク障害時の打刻データ消失リスクが入ってない。
         これ結構重要なんだけど。
 
@@ -338,19 +340,19 @@ Maestroは「V字モデル」という開発プロセスに従います。難し
   方式設計書とシーケンス図も更新しました。
 ```
 
-```
+```text
 あなた: いいね、これでOK。
 ```
 
 ### ステップ3: 詳細設計からコーディング
 
-```
+```text
 あなた: 詳細設計に進んでください。
 ```
 
 エージェントは各関数に対して **契約** を書きます:
 
-```
+```text
 前提条件: employee_id は正の整数であること
 事後条件: 戻り値はTimestamp型で、現在時刻±1秒以内であること
 例外: employee_id が存在しない場合 → EmployeeNotFoundError
@@ -358,7 +360,7 @@ Maestroは「V字モデル」という開発プロセスに従います。難し
 
 **詳細設計でもやり取りは続きます:**
 
-```
+```text
 あなた: recordAttendance関数の事後条件に「オフライン時はローカルキューに
         格納される」が入ってない。ステップ2のFMEA対策と矛盾してるよ。
 
@@ -369,7 +371,7 @@ Maestroは「V字モデル」という開発プロセスに従います。難し
   - 状態遷移表: Online/Offline/Syncing の3状態を追加
 ```
 
-```
+```text
 あなた: OK、コーディングに進んで。
 ```
 
@@ -377,7 +379,7 @@ Maestroは「V字モデル」という開発プロセスに従います。難し
 
 ### ステップ4〜6: テストする
 
-```
+```text
 あなた: 単体テストを設計してください。
 ```
 
@@ -390,7 +392,7 @@ Maestroは「V字モデル」という開発プロセスに従います。難し
 
 **テスト設計もレビュー対象です:**
 
-```
+```text
 あなた: 36協定チェックのテストで、月途中での部署異動ケースが
         抜けてる。異動前後の残業時間を合算するケースを追加して。
 
@@ -703,7 +705,9 @@ Maestroのファイルは、大きく3つの役割に分かれます:
 | `docs/templates/traceability-matrix.md` | トレーサビリティマトリクス |
 | `docs/templates/consistency-review.md` | 整合性レビュー |
 | `docs/templates/conversation-log.md` | 対話ログ |
+| `docs/templates/chat-transcript-log.md` | チャット生ログ（任意） |
 | `docs/templates/retrospective.md` | 振り返り |
+| `docs/templates/token-usage-metrics.md` | トークン使用量メトリクス（推定/実測） |
 
 ### 3. 知見（使うほど育つ）
 
@@ -717,6 +721,73 @@ Maestroのファイルは、大きく3つの役割に分かれます:
 | `knowledge/quality-metrics.md` | 品質メトリクスの定義と基準値 |
 | `knowledge/self-evaluation.md` | 自己評価のチェック項目 |
 | `knowledge/patterns.md` | 成功パターン集 |
+
+### 4. 運用・環境ファイル（必要に応じて参照）
+
+日常の開発運用やローカル環境の再現に使うファイルです:
+
+| ファイル | 内容 |
+|---|---|
+| `README.md` | フレームワーク全体の概要とクイックスタート |
+| `THIRD_PARTY_LICENSES` | OSSライセンスの集約（配布・監査向け） |
+| `.gitlab-ci-security.yml` | GitLab CI向けのセキュリティ検査定義 |
+| `.agent/workflows/learn.md` | Antigravityの学習・振り返り系ワークフロー |
+| `.vscode/settings.json` | VS Codeのワークスペース設定 |
+| `.vscode/mcp.json` | MCPサーバー定義（手動設定が必要な場合のみ記述） |
+| `.python-version` | ローカルで想定するPythonバージョン指定 |
+| `.vexp/` | Vexp拡張のローカル索引・メタデータ格納領域 |
+| `.codesight/` | 補助ツールの設定・キャッシュ領域 |
+| `要求仕様.md` | ルート配置の要求メモ（初期検討・整理用） |
+
+#### Vexp拡張（MCP）でコード検索を高速化する
+
+このリポジトリでは、VS Code拡張 **`Vexp.vexp-vscode`** を利用して、AIエージェントのコンテキスト取得を高速化できます。
+
+- **目的**: 全ファイルを毎回読み込む代わりに、依存グラフベースで「関連度の高い関数・型・周辺スケルトン」だけを返してトークン消費を削減する
+- **方式**: 拡張がローカルでコードを索引化し、MCP経由でエージェントへ検索・影響分析ツールを提供する
+- **主なMCPツール例**: `get_context_capsule`, `get_impact_graph`, `search_logic_flow`, `get_skeleton`, `index_status`
+- **セキュリティ特性**: ローカル処理前提（コードを外部に送らない設計）
+
+**現在のワークスペース状態（確認済み）**
+
+- 拡張機能: `Vexp.vexp-vscode` はインストール済み（`v1.2.12`）
+- `.vscode/mcp.json`: `{"servers": {}}`（手動定義なし）
+- `.vexp/manifest.json` に索引情報あり
+  - `indexed_at_commit`: `c5882e7d1996111a733ede454457c3df8f9a4611`
+  - `stats.total_files`: `20`
+  - `vexp_version`: `1.2.12`
+
+**使い方（最短）**
+
+1. 拡張をインストールしてワークスペースを開く
+2. 索引完了をVexpのサイドバー/ステータス表示で確認する
+3. Copilot/Codex/Claude等で通常どおり質問する（MCP経由で関連コードが優先提示される）
+
+> [!TIP]
+> `.vexp/` は一時ゴミではなく、索引・メモリ・統計の実体です。検索性能を維持したい場合は、通常は削除せず保持してください（再索引は可能）。
+
+> [!TIP]
+> Maestro作業でのトークン消費を記録したい場合は、`docs/templates/token-usage-metrics.md` を `docs/projects/<プロジェクト名>/context/token-usage-log.md` にコピーして運用してください。Copilot Chat等で実測値が取れない場合も、推定値でトレンド比較できます。
+
+#### 任意機能: チャット生ログ（Raw Transcript）
+
+「後から、このチャットで何をやり取りしたかを追いたい」場合は、生ログ機能を使います。
+
+- **デフォルトはOFF**（通常は記録しない）
+- あなたが「**ログを取って**」「**生ログを開始して**」と指示した時だけ開始
+- 「ログ停止」「生ログ終了」で停止
+- 形式は `docs/templates/chat-transcript-log.md` を利用
+- 保存時に **モデル名 / 開始〜終了時刻 / トークン消費（入力・出力・合計）** を記録
+  - 実測が取れない場合は `docs/templates/token-usage-metrics.md` の推定ルールで記録
+
+**保存先とGit管理**
+
+- フレームワーク更新（main相当）: `LOG/` に保存し、`.gitignore` 対象
+- プロジェクト作業: `docs/projects/<project>/logs/raw-chat/` に保存
+  - `.gitignore` に入れるかは、その都度あなたに確認して選択
+
+> [!NOTE]
+> 既存の `conversation-log.md` は「構造化サマリー」、`chat-transcript-log.md` は「発話そのものに近い記録」です。用途に応じて使い分けてください。
 
 ---
 
@@ -782,6 +853,50 @@ uv run pdf2md
 # または直接ファイルを指定
 uv run python src/pdf2md/main.py
 ```
+
+---
+
+## 🧩 `projects/pdf2md` モジュール索引（簡易）
+
+`projects/pdf2md/src/pdf2md/` 配下の主要モジュール構成です。ファイル名から役割を素早く把握するための索引として使ってください。
+
+### 1. `core/`（変換パイプライン本体）
+
+| ファイル | 役割（概要） |
+|---|---|
+| `core/pipeline.py` | PDF→Markdown 変換処理のオーケストレーション |
+| `core/pdf_reader.py` | PDFページの読み取り・ページ単位データ取得 |
+| `core/layout_analyzer.py` | ページレイアウト解析（段組み・領域判定） |
+| `core/block_detector.py` | テキスト/図表などのブロック検出 |
+| `core/text_extractor.py` | 本文テキスト抽出（OCR/補助処理を含む想定） |
+| `core/figure_extractor.py` | 図・画像領域の抽出 |
+| `core/image_preprocessor.py` | OCR前処理向けの画像補正 |
+| `core/markdown_builder.py` | 抽出結果からMarkdown文字列を構築 |
+| `core/result_merger.py` | ページ/ブロック単位の結果を最終出力に統合 |
+
+### 2. `gui/`（デスクトップUI）
+
+| ファイル | 役割（概要） |
+|---|---|
+| `gui/toolbar.py` | 上部操作UI（実行・保存・表示切替など） |
+| `gui/pdf_viewer.py` | PDFプレビュー表示とページ操作 |
+| `gui/block_panel.py` | ブロック一覧表示と選択・編集補助 |
+
+### 3. `models/`（データモデル）
+
+| ファイル | 役割（概要） |
+|---|---|
+| `models/__init__.py` | データモデル公開境界（将来の集約ポイント） |
+
+### 4. エントリポイント
+
+| ファイル | 役割（概要） |
+|---|---|
+| `main.py` | CLI/アプリ起動のエントリポイント |
+| `app.py` | アプリケーション初期化・全体構成（GUI/処理接続） |
+
+> [!NOTE]
+> この索引は「構成把握用」の簡易版です。詳細な責務分割やデータフローは、方式設計書・詳細設計書（`docs/templates/architecture-design.md`, `docs/templates/detailed-design.md` で作成した成果物）で管理してください。
 
 ---
 

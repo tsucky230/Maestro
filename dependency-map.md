@@ -49,8 +49,11 @@
 |---|---|---|
 | §9（サブエージェント） | `develop.md` 事前準備 | コンテキストファイルの扱いが一致するか |
 | §19（対話ログ） | `docs/templates/conversation-log.md` | テンプレートの構造との一致 |
+| §19（チャット生ログ） | `docs/templates/chat-transcript-log.md` | 生ログテンプレートの構造との一致 |
 | §19 | `develop.md` 対話ログルール | ワークフローのログ手順との一致 |
 | §19 | `knowledge/checklists.md` 対話ログ | チェック項目との一致 |
+| §19（チャット生ログ） | `manual.md` 生ログ説明 | ユーザー向け運用説明との一致 |
+| §19（チャット生ログ） | `.gitignore` | `LOG/` の除外方針との一致 |
 
 ### agents/mermaid-uml.md（§10）
 
@@ -124,6 +127,8 @@
 | 変更元 | 影響先 | 確認ポイント |
 |---|---|---|
 | `CLAUDE.md` | `copilot-instructions.md` | 起動ルール・品質ルールが同等か |
+| `copilot-instructions.md` | `CLAUDE.md` | 同上（逆方向） |
+| `CLAUDE.md` | `copilot-instructions.md` | チャット生ログ（任意機能）のルール一致 |
 | `copilot-instructions.md` | `CLAUDE.md` | 同上（逆方向） |
 | `develop.md` | `CLAUDE.md` / `copilot-instructions.md` | ワークフロー変更がプラットフォーム設定に反映されているか |
 | `README.md` | `AGENTS.md` コア索引 | セクション一覧・機能説明の一致 |

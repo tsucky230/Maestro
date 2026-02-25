@@ -39,6 +39,15 @@
 - レビューの場合: `knowledge/` 配下の観点表・チェックリストを参照する
 - **対話ログを記録する**（`docs/templates/conversation-log.md` テンプレート使用, `agents/sub-agent-and-context.md` §19）
 
+### 任意機能: チャット生ログ（Raw Transcript）
+
+- デフォルトは **OFF**
+- ユーザーが「ログを取って」「生ログを開始して」等を指示した場合のみ開始する
+- フォーマットは `docs/templates/chat-transcript-log.md` を使用する
+- フレームワーク更新（main相当）の場合は `LOG/` に保存し、`.gitignore` 対象にする
+- プロジェクト作業の場合は `.gitignore` に追加するかをユーザーに確認して選択する
+- 生ログ保存時は **モデル名 / 開始-終了時刻 / トークン消費量（入力・出力・合計）** を記録する
+
 ### コミットメッセージ
 
 ```

@@ -38,6 +38,9 @@
 - 設計の場合: `docs/templates/` 配下の対応テンプレートを使用する
 - レビューの場合: `knowledge/` 配下の観点表・チェックリストを参照する
 - **対話ログを記録する**（`docs/templates/conversation-log.md` テンプレート使用, `agents/sub-agent-and-context.md` §19）
+- **モードは2種類**: `standard` と `auto` を基本とし、`vexp` 単独モードは設けない
+- **コンテキスト検索は標準優先**: まず拡張非依存（standard）で成立させ、Vexpは任意の加速として扱う
+- **モード方針は `auto` 推奨**: Vexp利用可なら活用し、不可なら標準手段へフォールバックする
 
 ### 任意機能: チャット生ログ（Raw Transcript）
 

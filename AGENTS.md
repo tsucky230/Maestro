@@ -161,6 +161,7 @@ Maestro/
 │   │   ├── review-report.md           # レビュー報告テンプレート
 │   │   ├── consistency-review.md      # 整合性レビューテンプレート
 │   │   ├── fmea-fta.md                # FMEA/FTA テンプレート
+│   │   ├── chat-transcript-log.md     # チャット生ログテンプレート（任意）
 │   │   └── retrospective.md           # レトロスペクティブテンプレート
 │   └── projects/                      # 各プロジェクトの成果物
 │       └── <project-name>/
@@ -182,6 +183,7 @@ Maestro/
 │   ├── patterns.md                    # 推奨パターン集
 │   └── embedded-constraints.md        # 組み込みシステム制約・チェックリスト
 ├── dependency-map.md                  # ファイル間依存関係マップ
+├── LOG/                               # 任意: フレームワーク更新時のチャット生ログ（.gitignore対象）
 ├── manual.md                          # 利用マニュアル
 ├── CHANGELOG.md                       # 変更履歴
 ├── THIRD_PARTY_LICENSES               # OSSライセンス集約
@@ -241,3 +243,28 @@ docs/projects/<project-name>/
 ### ファイル変更時の整合性チェック
 
 ファイルを変更した場合は、**必ず** `dependency-map.md` を参照して影響先を確認し、整合性をチェックすること。詳細な手順は `agents/consistency-and-change.md` §28 を参照。
+
+---
+
+## 29. チャット生ログ（任意機能）
+
+> `agents/sub-agent-and-context.md` §19（対話ログ）を補完する任意機能。
+
+1. チャット生ログは**デフォルトOFF**とする。
+2. 人間が「ログを取って」等を指示した場合のみ、生ログ記録を開始する。
+3. 記録形式は `docs/templates/chat-transcript-log.md` を使用する。
+4. 保存先:
+	- フレームワーク更新（main相当）: `LOG/`
+	- プロジェクト作業: `docs/projects/<project>/logs/raw-chat/`
+5. `.gitignore` 方針:
+	- フレームワーク更新（main相当）は `LOG/` を `.gitignore` に含める（必須）
+	- プロジェクト作業は `.gitignore` 追加可否を人間に確認して選択する（必須）
+6. 生ログ保存時は、**モデル名・開始/終了時刻・トークン消費量（入力/出力/合計）** を必ず記録する。
+
+## 30. コンテキスト検索モード（標準優先）
+
+1. Maestroの標準運用は、**拡張機能非依存でも成立すること**を前提とする。
+2. Vexp等の拡張は「任意の高速化レイヤ」として扱い、未導入・停止時も作業継続可能でなければならない。
+3. 運用モードは `standard` と `auto` の2つを基本とし、専用の `vexp` 単独モードは設けない。
+4. 推奨モードは `auto` とし、利用可能なら拡張を使い、利用不可なら `standard` にフォールバックする。
+5. エージェントの説明・手順では、常に `standard` 手順を先に示し、拡張利用（Vexp等）は `auto` 運用の補足として提示する。
